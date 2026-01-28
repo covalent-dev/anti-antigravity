@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Agent Manager</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <div class="app-wrapper">
+      <aside class="sidebar">
+        <div class="sidebar-logo">
+          <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>
+          </svg>
+          <span>Anti-Antigravity</span>
+        </div>
+        <nav class="sidebar-nav">
+          <div class="sidebar-item active">
+            <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="7" height="7" rx="1"/>
+              <rect x="14" y="3" width="7" height="7" rx="1"/>
+              <rect x="3" y="14" width="7" height="7" rx="1"/>
+              <rect x="14" y="14" width="7" height="7" rx="1"/>
+            </svg>
+            <span>Agent Manager</span>
+          </div>
+          <div class="sidebar-item">
+            <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+              <polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+            <span>Workspaces</span>
+          </div>
+          <div class="sidebar-section">Tools</div>
+          <div class="sidebar-item">
+            <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+              <polyline points="2 17 12 22 22 17"/>
+              <polyline points="2 12 12 17 22 12"/>
+            </svg>
+            <span>Playground</span>
+          </div>
+          <div class="sidebar-item">
+            <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+            </svg>
+            <span>Knowledge</span>
+          </div>
+          <div class="sidebar-section">System</div>
+          <div class="sidebar-item">
+            <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+            <span>Settings</span>
+          </div>
+        </nav>
+        <div class="sidebar-footer">
+          Free forever.<br>No VC funding required.
+        </div>
+      </aside>
+
+      <div class="main-content">
+        <header>
+          <div class="bar">
+            <div class="title">
+              <span class="header-brand">Agent Manager</span>
+              <span class="open-source-badge">Open Source</span>
+              <span class="pill">
+                <span id="health-dot" class="statusDot"></span>
+                <span id="health-label">status</span>
+              </span>
+            </div>
+
+            <div class="right">
+              <span class="pill">Updated <b id="last-update">--</b></span>
+              <span class="pill">Sessions <b id="session-count">0</b></span>
+              <span class="pill">
+                <span>Template</span>
+                <select id="template-select" class="select">
+                  <option value="">Loading…</option>
+                </select>
+              </span>
+              <button id="btn-new-task" class="btn primary">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+                New Task
+              </button>
+              <button id="btn-refresh" class="btn">Refresh</button>
+              <button id="btn-kill-all" class="btn danger">Kill all</button>
+            </div>
+          </div>
+        </header>
+
+        <nav class="tabBar">
+          <button class="tab active" data-tab="sessions">Sessions</button>
+          <button class="tab" data-tab="queue">Queue</button>
+        </nav>
+
+        <main>
+      <!-- Sessions View -->
+      <div id="sessions-view">
+      <div class="layout">
+        <section class="panel">
+          <div class="panelHeader">
+            <h2>Sessions</h2>
+            <div class="small">Polling <b>5s</b></div>
+          </div>
+          <div class="content">
+            <div id="empty-state" class="muted empty hidden">
+              No active sessions. Your wallet thanks you.
+            </div>
+
+            <div id="session-board" class="kanbanGrid sessionKanban">
+              <div class="col">
+                <div class="colHead"><div>Idle</div><span id="count-idle">0</span></div>
+                <div class="cards" id="col-idle"></div>
+              </div>
+              <div class="col">
+                <div class="colHead"><div>Working</div><span id="count-working">0</span></div>
+                <div class="cards" id="col-working"></div>
+              </div>
+              <div class="col">
+                <div class="colHead"><div>Needs input</div><span id="count-needs_input">0</span></div>
+                <div class="cards" id="col-needs_input"></div>
+              </div>
+              <div class="col">
+                <div class="colHead"><div>Done</div><span id="count-done">0</span></div>
+                <div class="cards" id="col-done"></div>
+              </div>
+              <div class="col">
+                <div class="colHead"><div>Error</div><span id="count-error">0</span></div>
+                <div class="cards" id="col-error"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel detail">
+          <div class="panelHeader">
+            <h2 id="detail-title">Session</h2>
+            <div class="small" id="detail-meta">Select a session card.</div>
+          </div>
+          <div class="content">
+            <div id="detail-empty" class="muted">Select a session card to view output.</div>
+
+            <div id="detail-view" class="hidden">
+              <div class="metaRow" id="detail-tags"></div>
+              <div class="divider"></div>
+              <div class="detailActions">
+                <button id="btn-detail-attach" class="btn small">Copy attach</button>
+                <button id="btn-detail-refresh" class="btn small">Refresh output</button>
+                <button id="btn-detail-kill" class="btn small danger">Kill</button>
+              </div>
+              <pre id="detail-output" class="pre">Loading…</pre>
+            </div>
+          </div>
+        </section>
+      </div>
+      </div>
+
+      <!-- Queue View -->
+      <div id="queue-view" class="hidden">
+        <div class="panel">
+          <div class="panelHeader">
+            <h2>Task Queue</h2>
+            <div class="small">Polling <b>5s</b></div>
+          </div>
+          <div class="content">
+            <div id="queue-empty" class="muted empty hidden">
+              No tasks in queue. Create a new task to get started.
+            </div>
+            <div id="queue-board" class="kanbanGrid queueKanban">
+              <div class="col">
+                <div class="colHead"><div>Pending</div><span id="count-pending">0</span></div>
+                <div class="cards" id="col-pending"></div>
+              </div>
+              <div class="col">
+                <div class="colHead"><div>In Progress</div><span id="count-in-progress">0</span></div>
+                <div class="cards" id="col-in-progress"></div>
+              </div>
+              <div class="col">
+                <div class="colHead"><div>Blocked</div><span id="count-blocked">0</span></div>
+                <div class="cards" id="col-blocked"></div>
+              </div>
+              <div class="col">
+                <div class="colHead"><div>Completed</div><span id="count-completed">0</span></div>
+                <div class="cards" id="col-completed"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+        </main>
+      </div>
+    </div>
+
+    <!-- Task Creation Modal -->
+    <div id="modal-new-task" class="modal">
+      <div class="modal-backdrop"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Create New Task</h3>
+          <button class="modal-close" id="modal-close">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Agent</label>
+              <select id="task-agent" class="form-select">
+                <option value="">Select agent...</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Model</label>
+              <select id="task-model" class="form-select" disabled>
+                <option value="">Select agent first...</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Template</label>
+              <select id="task-template" class="form-select">
+                <option value="">Select template...</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Priority</label>
+              <select id="task-priority" class="form-select">
+                <option value="p2">P2 - Normal</option>
+                <option value="p0">P0 - Critical</option>
+                <option value="p1">P1 - High</option>
+                <option value="p3">P3 - Low</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group full">
+              <label class="form-label">Project</label>
+              <input type="text" id="task-project" class="form-input" placeholder="e.g., anti-antigravity">
+            </div>
+          </div>
+
+          <div id="dynamic-fields" class="dynamic-fields"></div>
+
+          <div class="preview-panel">
+            <div class="preview-header" id="preview-toggle">
+              <span class="preview-title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                </svg>
+                Task Preview
+              </span>
+              <span class="preview-toggle" id="preview-toggle-text">Show</span>
+            </div>
+            <div class="preview-content" id="preview-content">
+              <pre id="preview-json">{}</pre>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="btn-save-draft" class="btn">Save Draft</button>
+          <button id="btn-create-launch" class="btn primary">Create &amp; Launch</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>
