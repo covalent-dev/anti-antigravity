@@ -6,8 +6,25 @@ import re
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, Field, validator
+try:
+    from fastapi import FastAPI, HTTPException
+except ModuleNotFoundError as exc:
+    raise SystemExit(
+        "Missing dependency 'fastapi'. Install deps with: pip install -r requirements.txt"
+    ) from exc
+from pydantic import BaseModel, Field
+
+try:
+    from pydantic import field_validator
+
+    def _field_validator(*fields: str):
+        return field_validator(*fields)
+
+except ImportError:  # pragma: no cover (pydantic v1 fallback)
+    from pydantic import validator
+
+    def _field_validator(*fields: str):
+        return validator(*fields)
 
 app = FastAPI(title="orch-v2 status server")
 
@@ -29,7 +46,7 @@ class StatusPayload(BaseModel):
     progress: Optional[int] = Field(None, ge=0, le=100, description="Progress percent")
     updated_at: Optional[str] = Field(None, description="RFC3339 timestamp")
 
-    @validator("state")
+    @_field_validator("state")
     def validate_state(cls, value: str) -> str:
         if value not in STATES:
             raise ValueError(f"state must be one of {STATES}")
@@ -73,7 +90,10 @@ def _read_status(session_id: str) -> Dict[str, Any]:
 @app.post("/status/{session_id}")
 def post_status(session_id: str, payload: StatusPayload) -> Dict[str, Any]:
     _validate_session_id(session_id)
-    data = payload.dict()
+    if hasattr(payload, "model_dump"):
+        data = payload.model_dump()
+    else:  # pragma: no cover (pydantic v1 fallback)
+        data = payload.dict()
     if not data.get("updated_at"):
         data["updated_at"] = _now_rfc3339()
     _write_status(session_id, data)
@@ -114,7 +134,12 @@ def delete_status(session_id: str) -> Dict[str, Any]:
 
 
 if __name__ == "__main__":
-    import uvicorn
+    try:
+        import uvicorn
+    except ModuleNotFoundError as exc:
+        raise SystemExit(
+            "Missing dependency 'uvicorn'. Install deps with: pip install -r requirements.txt"
+        ) from exc
     port = int(os.environ.get("STATUS_PORT", "8421"))
     print(f"Status server starting on http://localhost:{port}")
     uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")

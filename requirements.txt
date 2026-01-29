@@ -2,3 +2,6 @@ flask
 python-slugify
 PyYAML
 requests
+fastapi
+uvicorn
+pydantic

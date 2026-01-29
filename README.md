@@ -17,10 +17,26 @@ Run multiple AI agents in parallel. Queue tasks, assign them to Claude, Codex, G
 # Install dependencies
 pip install -r requirements.txt
 
-# Run the dashboard
+# Run the status server (session monitoring)
+python src/status_server.py
+
+# In another terminal, run the dashboard
 python -m src.dashboard.server
 
 # Open http://localhost:8420
+```
+
+The dashboard checks the status server via `STATUS_SERVER_URL` (default `http://localhost:8421`).
+The status server stores per-session JSON files under `~/.orch-v2/status/`.
+
+Environment variables:
+
+```bash
+# Change the status server port
+STATUS_PORT=8421 python src/status_server.py
+
+# Point the dashboard at a non-default status server
+STATUS_SERVER_URL=http://localhost:8421 python -m src.dashboard.server
 ```
 
 ## How it works
