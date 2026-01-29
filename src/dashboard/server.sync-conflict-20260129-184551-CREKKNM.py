@@ -124,9 +124,8 @@ def fill_template(content: str, auto_values: Dict[str, Any], user_values: Dict[s
 
 
 def _extract_field(content: str, field: str) -> str | None:
-    match = re.search(rf"\*\*{re.escape(field)}:\*\*[ \t]*(.*)", content)
-    value = match.group(1).strip() if match else None
-    return value if value else None
+    match = re.search(rf"\*\*{re.escape(field)}:\*\*\s*(.+)", content)
+    return match.group(1).strip() if match else None
 
 
 def _parse_task_spec(path: Path) -> Dict[str, Any]:
@@ -483,16 +482,13 @@ def api_create_task():
     session_id = _derive_session_id(task_id)
 
     auto_defaults = {field: "" for field in AUTO_FIELDS}
-    # Normalize priority to uppercase (P0..P3)
-    raw_priority = data.get("priority", "")
-    priority = raw_priority.upper() if raw_priority else ""
     auto_values = {
         **auto_defaults,
         "TASK_ID": task_id,
         "DATE": datetime.now().date().isoformat(),
         "AGENT": data.get("agent", ""),
         "MODEL": data.get("model", ""),
-        "PRIORITY": priority,
+        "PRIORITY": data.get("priority", ""),
         "PROJECT": data.get("project", ""),
         "SESSION_ID": session_id,
         "WORKING_DIR": data.get("working_dir", "~/projects/orchestration-v2"),
@@ -539,9 +535,7 @@ def api_create_quick_task():
         return jsonify({"error": "prompt is required"}), 400
 
     model = (data.get("model") or "").strip()
-    # Normalize priority to uppercase (P0..P3)
-    raw_priority = (data.get("priority") or "P2").strip() or "P2"
-    priority = raw_priority.upper()
+    priority = (data.get("priority") or "P2").strip() or "P2"
     project = (data.get("project") or "general").strip() or "general"
     working_dir = (data.get("working_dir") or "~").strip() or "~"
 
@@ -774,8 +768,7 @@ def api_queue():
 
     def priority_sort_key(item):
         """Sort by priority: P0 first, then P1, P2, P3, unknown last"""
-        # Normalize to uppercase for case-insensitive matching
-        p = (item.get("priority") or "").upper()
+        p = item.get("priority") or ""
         # Extract numeric priority (P0 -> 0, P1 -> 1, etc.)
         if p.startswith("P") and len(p) > 1 and p[1].isdigit():
             return (int(p[1]), item.get("id") or "")

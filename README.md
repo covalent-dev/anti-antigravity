@@ -1,109 +1,60 @@
-# Anti-Antigravity 🛸
+# Orchestrator
 
-> The open-source agent orchestration system.
-> Like Antigravity, but free. And yours.
+Task queue and multi-agent orchestration for AI workflows.
 
-![Demo](screenshot.png)
+## What it does
 
-## The Future is Multi-Agent
+Run multiple AI agents in parallel. Queue tasks, assign them to Claude, Codex, GPT, or Gemini, and watch them work from a dashboard.
 
-Single-agent workflows are hitting a wall. Complex tasks need coordination—multiple models working in parallel, handing off context, checking each other's work.
+- Task queue with priorities and templates
+- Freeform task creation (just describe what you want)
+- Real-time session monitoring
+- BYO API keys, no limits
 
-The big players know this. That's why Google built Antigravity. That's why OpenAI is moving toward agent swarms. That's why Anthropic keeps talking about "computer use."
-
-**The problem?** If you use seomthing to manage multi agent workflows like antigravity's "agent manager" you will be in rate limit hell. For power users running agents like Opus4.5, GPT5.2, for 8+ hours a day, you need something that you can use indefinitely.
-
-**The fix?** Build it yourself.
-
-## What This Is
-
-An extremely lightweight orchestration layer for running multiple AI agents in parallel:
-
-- **Task queue** with priorities, templates, and freeform prompts
-- **Multi-agent support** — Claude, GPT, Codex, Gemini, whatever
-- **Real-time dashboard** — watch your agents work
-- **BYO API keys or subscriotion** — no middleman, no markup, no limits
-- **Local-first** — runs on your machine, your VPS, your rules
-
-Think of it as a control tower for AI agents. You define the tasks, pick the models, and let them run.
-
-## Features
-
-- 🎯 **Task orchestration** — queue, prioritize, launch, monitor
-- 🤖 **Agent agnostic** — Claude, GPT-4, Codex, Gemini, local models
-- 🔑 **BYO keys** — use your own API keys, no rate limits
-- 📊 **Live dashboard** — kanban-style queue + session monitoring
-- ⚡ **Freeform tasks** — just describe what you want
-- 🎨 **Clean UI** — because terminal-only is for masochists
-
-## Quick Start
+## Quick start
 
 ```bash
-git clone https://github.com/covalent-dev/anti-antigravity
-cd anti-antigravity
-
-# Set up your API keys
-cp .env.example .env
-# Edit .env with your keys
-
-# Run it
-docker-compose up
-
-# Visit http://localhost:8420
-```
-
-Or without Docker:
-
-```bash
+# Install dependencies
 pip install -r requirements.txt
+
+# Run the dashboard
 python -m src.dashboard.server
+
+# Open http://localhost:8420
 ```
 
-## The Stack
+## How it works
 
-- **Backend**: Python + Flask
-- **Frontend**: React + Tailwind (lives in `sandbox-ui/`)
-- **Agents**: tmux sessions running Claude Code, Codex CLI, etc.
-- **Queue**: Markdown files (yes, really—simple and inspectable)
+Tasks are markdown files in a queue:
 
-## Why Markdown for Tasks?
-
-Because you can read them. Edit them. Version control them. Grep them.
-
-```markdown
-# Task: Implement user auth
-
-- Agent: claude
-- Priority: p1
-- Model: sonnet
-
-## Description
-Add JWT-based authentication to the API...
+```
+~/.claude-context/orchestration/queue/
+├── pending/      # waiting to run
+├── in-progress/  # currently running
+├── blocked/      # stuck
+└── completed/    # done
 ```
 
-No database migrations. No ORM. Just files.
+The dashboard reads these files, lets you launch tasks, and monitors the tmux sessions where agents run.
 
-## Philosophy
+## Stack
 
-1. **Own your infrastructure** — no vendor lock-in
-2. **Inspect everything** — no black boxes
-3. **Ship fast** — perfect is the enemy of done
-4. **AI-assisted, human-directed** — you're the orchestrator
+- Backend: Python + Flask
+- Frontend: React + Tailwind
+- Agents: tmux sessions running Claude Code, Codex CLI, etc.
+- Queue: Markdown files (no database)
 
-## Roadmap
+## Project structure
 
-- [ ] Agent handoffs (pass context between agents)
-- [ ] Dependency chains (task B waits for task A)
-- [ ] Cost tracking per task
-- [ ] Plugin system for custom agents
-- [ ] Web-based task editor
-
-## Contributing
-
-PRs welcome. The bar is low: does it work? Ship it.
+```
+src/
+├── dashboard/
+│   ├── server.py      # Flask API
+│   ├── frontend/      # React source
+│   └── static/        # Built assets
+└── status_server.py   # Session monitoring
+```
 
 ## License
 
-MIT — do whatever you want.
-
----
+MIT
