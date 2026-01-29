@@ -108,7 +108,6 @@ function TaskDetailPanel({ taskId, onClose, onLaunch }: TaskDetailPanelProps) {
 
 export function TaskQueue() {
     const [selectedTask, setSelectedTask] = useState<string | null>(null);
-    const [showCompleted, setShowCompleted] = useState(false);
     const queryClient = useQueryClient();
 
     const { data: queue, isLoading } = useQuery({
@@ -200,23 +199,13 @@ export function TaskQueue() {
         );
     };
 
-    const activeStates: (keyof QueueData)[] = ['pending', 'in-progress', 'blocked'];
-    if (showCompleted) activeStates.push('completed');
+    const activeStates: (keyof QueueData)[] = ['pending', 'in-progress', 'blocked', 'completed'];
 
     return (
         <div className="flex h-full font-sans">
             <div className="flex-1 flex flex-col p-4 overflow-hidden">
                 <div className="flex items-center justify-between mb-4">
                     <h2 className="text-lg font-semibold text-white tracking-tight pl-1">Task Queue</h2>
-                    <label className="flex items-center gap-2 text-sm text-gray-400 cursor-pointer hover:text-white transition-colors">
-                        <input
-                            type="checkbox"
-                            checked={showCompleted}
-                            onChange={e => setShowCompleted(e.target.checked)}
-                            className="bg-black border border-gray-600 rounded-sm focus:ring-0 checked:bg-blue-600 checkbox-sm"
-                        />
-                        Show Completed
-                    </label>
                 </div>
                 <div className="flex gap-4 overflow-x-auto flex-1 pb-2">
                     {activeStates.map(state => renderColumn(state, queue?.[state] || []))}
