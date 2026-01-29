@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchTemplates, createTask, createQuickTask, fetchTemplateDetail, type Template } from '../../api/client';
 import { useState, useEffect } from 'react';
 import { X, Play, Zap, FileText } from 'lucide-react';
+import axios from 'axios';
 
 type TaskMode = 'template' | 'freeform';
 
@@ -18,8 +19,25 @@ export function TaskModal({ isOpen, onClose }: TaskModalProps) {
     const [fields, setFields] = useState<Record<string, string>>({});
     const [agent, setAgent] = useState('claude');
     const [model, setModel] = useState('sonnet');
-    const [priority, setPriority] = useState('p2');
+    const [priority, setPriority] = useState('P2');
     const [launchImmediately, setLaunchImmediately] = useState(true);
+    const [submitError, setSubmitError] = useState<string | null>(null);
+
+    const getErrorMessage = (error: unknown) => {
+        if (axios.isAxiosError(error)) {
+            const data = error.response?.data as any;
+            if (data && typeof data === 'object') {
+                if (Array.isArray(data.missing) && data.missing.length > 0 && typeof data.error === 'string') {
+                    return `${data.error}: ${data.missing.join(', ')}`;
+                }
+                if (typeof data.error === 'string') return data.error;
+                if (typeof data.message === 'string') return data.message;
+            }
+            return error.message || 'Request failed';
+        }
+        if (error instanceof Error) return error.message;
+        return 'Something went wrong';
+    };
 
     const { data: templates } = useQuery({ queryKey: ['templates'], queryFn: fetchTemplates });
     const { data: templateDetail } = useQuery({
@@ -35,9 +53,11 @@ export function TaskModal({ isOpen, onClose }: TaskModalProps) {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['queue'] });
             queryClient.invalidateQueries({ queryKey: ['sessions'] });
+            setSubmitError(null);
             onClose();
             resetForm();
         },
+        onError: (error) => setSubmitError(getErrorMessage(error)),
     });
 
     const quickMutation = useMutation({
@@ -45,15 +65,18 @@ export function TaskModal({ isOpen, onClose }: TaskModalProps) {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['queue'] });
             queryClient.invalidateQueries({ queryKey: ['sessions'] });
+            setSubmitError(null);
             onClose();
             resetForm();
         },
+        onError: (error) => setSubmitError(getErrorMessage(error)),
     });
 
     const resetForm = () => {
         setFreeformPrompt('');
         setSelectedTemplate('');
         setFields({});
+        setSubmitError(null);
     };
 
     useEffect(() => {
@@ -63,8 +86,15 @@ export function TaskModal({ isOpen, onClose }: TaskModalProps) {
         }
     }, [templateDetail]);
 
+    useEffect(() => {
+        if (!isOpen) {
+            setSubmitError(null);
+        }
+    }, [isOpen]);
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        setSubmitError(null);
         if (mode === 'freeform') {
             quickMutation.mutate({
                 prompt: freeformPrompt,
@@ -237,6 +267,12 @@ export function TaskModal({ isOpen, onClose }: TaskModalProps) {
                             />
                             Launch immediately after creating
                         </label>
+
+                        {submitError && (
+                            <div className="text-sm text-red-200 border border-red-900/50 bg-red-950/30 rounded-md p-3">
+                                {submitError}
+                            </div>
+                        )}
                     </form>
 
                     <div className="p-4 border-t border-white/10 flex justify-end gap-2 bg-black rounded-b-lg">

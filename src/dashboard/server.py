@@ -97,6 +97,35 @@ def generate_task_id(title: str) -> str:
         slug = "task"
     return f"task-{timestamp}-{slug}"
 
+def _normalize_priority(priority: str | None, *, default: str = "P2") -> str:
+    text = (priority or "").strip()
+    if not text:
+        return default
+    upper = text.upper()
+    if upper in {"P0", "P1", "P2", "P3"}:
+        return upper
+    match = re.search(r"\bP([0-3])\b", upper)
+    if match:
+        return f"P{match.group(1)}"
+    match = re.search(r"\b([0-3])\b", upper)
+    if match:
+        return f"P{match.group(1)}"
+    return default
+
+
+def _derive_title_from_prompt(prompt: str) -> str:
+    for raw in (prompt or "").splitlines():
+        line = raw.strip()
+        if not line:
+            continue
+        line = re.sub(r"^[#>*\\-\\s]+", "", line).strip()
+        if not line:
+            continue
+        if len(line) > 80:
+            return line[:77].rstrip() + "..."
+        return line
+    return "Quick task"
+
 
 def parse_template_fields(content: str) -> List[Dict[str, Any]]:
     pattern = r"\{\{([A-Z_]+)\}\}"
@@ -483,16 +512,13 @@ def api_create_task():
     session_id = _derive_session_id(task_id)
 
     auto_defaults = {field: "" for field in AUTO_FIELDS}
-    # Normalize priority to uppercase (P0..P3)
-    raw_priority = data.get("priority", "")
-    priority = raw_priority.upper() if raw_priority else ""
     auto_values = {
         **auto_defaults,
         "TASK_ID": task_id,
         "DATE": datetime.now().date().isoformat(),
         "AGENT": data.get("agent", ""),
         "MODEL": data.get("model", ""),
-        "PRIORITY": priority,
+        "PRIORITY": _normalize_priority(data.get("priority")),
         "PROJECT": data.get("project", ""),
         "SESSION_ID": session_id,
         "WORKING_DIR": data.get("working_dir", "~/projects/orchestration-v2"),
@@ -527,21 +553,17 @@ def api_create_quick_task():
     if not isinstance(data, dict):
         return jsonify({"error": "request body must be a JSON object"}), 400
 
-    title = (data.get("title") or "").strip()
     agent = (data.get("agent") or "").strip()
     prompt = (data.get("prompt") or "").strip()
 
-    if not title:
-        return jsonify({"error": "title is required"}), 400
     if not agent:
         return jsonify({"error": "agent is required"}), 400
     if not prompt:
         return jsonify({"error": "prompt is required"}), 400
 
+    title = (data.get("title") or "").strip() or _derive_title_from_prompt(prompt)
     model = (data.get("model") or "").strip()
-    # Normalize priority to uppercase (P0..P3)
-    raw_priority = (data.get("priority") or "P2").strip() or "P2"
-    priority = raw_priority.upper()
+    priority = _normalize_priority(data.get("priority"))
     project = (data.get("project") or "general").strip() or "general"
     working_dir = (data.get("working_dir") or "~").strip() or "~"
 
@@ -579,6 +601,11 @@ def api_create_quick_task():
         spec_path.write_text(spec_content, encoding="utf-8")
     except Exception as exc:
         return jsonify({"error": str(exc)}), 500
+
+    if data.get("launch"):
+        launch_response = _launch_task(task_id)
+        if isinstance(launch_response, tuple):
+            return launch_response
 
     return jsonify({
         "task_id": task_id,
