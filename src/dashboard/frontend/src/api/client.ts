@@ -4,10 +4,12 @@ export const api = axios.create({
     baseURL: '/api',
 });
 
+export type SessionStatus = 'idle' | 'working' | 'needs_input' | 'done' | 'error' | 'running';
+
 export interface Session {
     id: string;
     agent_type: string;
-    status: 'idle' | 'running' | 'error' | 'done';
+    status: SessionStatus;
     message: string;
     progress?: {
         current: number;

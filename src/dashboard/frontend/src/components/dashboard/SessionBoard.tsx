@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchSessions, killSession, type Session } from '../../api/client';
-import { Play, Square, AlertCircle, CheckCircle, Clock } from 'lucide-react';
+import { Play, Square, AlertCircle, CheckCircle, Clock, HelpCircle } from 'lucide-react';
 import { clsx } from 'clsx';
 
 function SessionCard({ session }: { session: Session }) {
@@ -12,6 +12,8 @@ function SessionCard({ session }: { session: Session }) {
         },
     });
 
+    const statusLabel = session.status.replace(/_/g, ' ');
+
     return (
         <div className="bg-black p-3 border border-white/10 rounded-lg shadow-sm hover:border-blue-500/50 transition-colors group w-full">
             <div className="flex justify-between items-start mb-2">
@@ -19,12 +21,13 @@ function SessionCard({ session }: { session: Session }) {
                     {session.id}
                 </h3>
                 <span className={clsx("text-xs px-2 py-0.5 border rounded-md font-medium capitalize", {
-                    'border-emerald-900/50 bg-emerald-950/30 text-emerald-300': session.status === 'running',
+                    'border-emerald-900/50 bg-emerald-950/30 text-emerald-300': ['working', 'running'].includes(session.status),
                     'border-zinc-700/50 bg-zinc-900/30 text-zinc-400': session.status === 'idle',
                     'border-red-900/50 bg-red-950/30 text-red-300': session.status === 'error',
                     'border-blue-900/50 bg-blue-950/30 text-blue-300': session.status === 'done',
+                    'border-amber-900/50 bg-amber-950/30 text-amber-300': session.status === 'needs_input',
                 })}>
-                    {session.status}
+                    {statusLabel}
                 </span>
             </div>
 
@@ -64,7 +67,8 @@ export function SessionBoard() {
 
     const grouped = {
         idle: sessions?.filter(s => s.status === 'idle') || [],
-        working: sessions?.filter(s => ['running', 'working'].includes(s.status)) || [],
+        working: sessions?.filter(s => ['working', 'running'].includes(s.status)) || [],
+        needs_input: sessions?.filter(s => s.status === 'needs_input') || [],
         done: sessions?.filter(s => s.status === 'done') || [],
         error: sessions?.filter(s => s.status === 'error') || [],
     };
@@ -73,6 +77,7 @@ export function SessionBoard() {
         <div className="flex gap-4 h-full p-4 overflow-x-auto min-w-full font-sans">
             <Column title="Idle" count={grouped.idle.length} items={grouped.idle} icon={<Clock size={16} />} />
             <Column title="Working" count={grouped.working.length} items={grouped.working} icon={<Play size={16} />} />
+            <Column title="Needs Input" count={grouped.needs_input.length} items={grouped.needs_input} icon={<HelpCircle size={16} />} />
             <Column title="Done" count={grouped.done.length} items={grouped.done} icon={<CheckCircle size={16} />} />
             <Column title="Error" count={grouped.error.length} items={grouped.error} icon={<AlertCircle size={16} />} />
         </div>
