@@ -25,7 +25,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from session_launcher import kill_session as kill_orch_session, launch_from_template
 from status_client import StatusClient
 
-app = Flask(__name__, static_folder="static")
+STATIC_DIR = Path(__file__).parent / "static"
+app = Flask(__name__, static_folder=str(STATIC_DIR))
+
+@app.after_request
+def add_cors_headers(response):
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type"
+    return response
 
 # Configuration
 STATUS_SERVER_URL = os.environ.get("STATUS_SERVER_URL", "http://localhost:8421")
@@ -274,13 +282,13 @@ def _build_launch_command(agent: str, model: str, spec_path: Path) -> str:
 @app.route('/')
 def index():
     """Serve the dashboard HTML."""
-    return send_from_directory('static', 'index.html')
+    return send_from_directory(str(STATIC_DIR), 'index.html')
 
 
 @app.route('/static/<path:filename>')
 def static_files(filename):
     """Serve static files."""
-    return send_from_directory('static', filename)
+    return send_from_directory(str(STATIC_DIR), filename)
 
 
 @app.route('/api/sessions')
@@ -779,6 +787,18 @@ def api_queue():
         result[state].sort(key=priority_sort_key)
 
     return jsonify(result)
+
+
+@app.route('/assets/<path:filename>')
+def assets_files(filename):
+    """Serve built assets."""
+    return send_from_directory(str(STATIC_DIR / 'assets'), filename)
+
+
+@app.route('/vite.svg')
+def vite_svg():
+    """Serve vite svg."""
+    return send_from_directory(str(STATIC_DIR), 'vite.svg')
 
 
 if __name__ == '__main__':

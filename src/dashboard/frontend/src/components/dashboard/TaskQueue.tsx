@@ -32,14 +32,14 @@ function TaskDetailPanel({ taskId, onClose, onLaunch }: TaskDetailPanelProps) {
 
     if (isLoading) {
         return (
-            <div className="bg-black border-l border-white/10 w-96 p-4">
+            <div className="bg-black border-l border-white/10 w-[550px] p-4">
                 <div className="animate-pulse text-gray-500">Loading...</div>
             </div>
         );
     }
 
     return (
-        <div className="bg-black border-l border-white/10 w-96 flex flex-col">
+        <div className="bg-black border-l border-white/10 w-[550px] flex flex-col">
             <div className="flex justify-between items-center p-4 border-b border-white/10">
                 <h3 className="font-semibold text-white truncate">{task?.title || taskId}</h3>
                 <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors">
@@ -134,6 +134,26 @@ export function TaskQueue() {
         const config = stateConfig[state];
         const Icon = config.icon;
 
+        // Sort completed tasks by creation time (most recent first)
+        const displayTasks = state === 'completed'
+            ? [...tasks].sort((a, b) => new Date(b.created).getTime() - new Date(a.created).getTime())
+            : tasks;
+
+        const getTimeBadge = (created: string) => {
+            const date = new Date(created);
+            const now = new Date();
+            const diffMs = now.getTime() - date.getTime();
+            const diffHours = diffMs / (1000 * 60 * 60);
+
+            if (diffHours < 1) {
+                return <span className="text-[10px] px-1.5 py-0.5 border border-pink-500/30 bg-pink-500/10 text-pink-400 rounded-md font-medium uppercase">Recent</span>;
+            }
+            if (date.getDate() === now.getDate() && date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear()) {
+                return <span className="text-[10px] px-1.5 py-0.5 border border-cyan-500/30 bg-cyan-500/10 text-cyan-400 rounded-md font-medium uppercase">Today</span>;
+            }
+            return null;
+        };
+
         return (
             <div className="flex-1 min-w-[280px] bg-black border border-white/10 rounded-lg flex flex-col max-h-full overflow-hidden">
                 <div className={`p-3 border-b border-white/10 bg-white/5`}>
@@ -146,7 +166,7 @@ export function TaskQueue() {
                     </div>
                 </div>
                 <div className="flex-1 overflow-y-auto p-2 space-y-2">
-                    {tasks.map(task => (
+                    {displayTasks.map(task => (
                         <div
                             key={task.id}
                             onClick={() => setSelectedTask(task.id)}
@@ -157,7 +177,8 @@ export function TaskQueue() {
                                 <span className="text-sm text-gray-300 line-clamp-2 font-medium">{task.title}</span>
                                 <ChevronRight size={14} className="text-gray-600 flex-shrink-0 mt-1" />
                             </div>
-                            <div className="flex gap-1 mt-3 flex-wrap">
+                            <div className="flex gap-1 mt-3 flex-wrap items-center">
+                                {state === 'completed' && getTimeBadge(task.created)}
                                 {task.priority && (
                                     <span className={`text-[10px] px-1.5 py-0.5 border rounded-md ${priorityColors[task.priority.toLowerCase()] || priorityColors.p2} font-medium uppercase`}>
                                         {task.priority}

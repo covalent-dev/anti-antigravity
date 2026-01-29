@@ -257,7 +257,7 @@ function startPolling() {
 
 async function loadTemplates() {
   try {
-    const response = await fetch("/api/templates", { cache: "no-store" });
+    const response = await fetch("http://100.92.214.123:8420/api/templates", { cache: "no-store" });
     const data = await response.json();
     const templates = Array.isArray(data.templates) ? data.templates : [];
 
@@ -276,7 +276,7 @@ async function loadTemplates() {
 async function fetchSessions() {
   const started = Date.now();
   try {
-    const response = await fetch("/api/sessions", { cache: "no-store" });
+    const response = await fetch("http://100.92.214.123:8420/api/sessions", { cache: "no-store" });
     const data = await response.json();
 
     state.sessions = Array.isArray(data.sessions) ? data.sessions : [];
@@ -435,7 +435,7 @@ function clearSelection() {
 
 async function refreshOutput(sessionId) {
   try {
-    const response = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/output`, {
+    const response = await fetch(`http://100.92.214.123:8420/api/sessions/${encodeURIComponent(sessionId)}/output`, {
       cache: "no-store",
     });
     const data = await response.json();
@@ -451,7 +451,7 @@ async function refreshOutput(sessionId) {
 
 async function copyAttachCommand(sessionId) {
   try {
-    const response = await fetch(`/api/attach-command/${encodeURIComponent(sessionId)}`, {
+    const response = await fetch(`http://100.92.214.123:8420/api/attach-command/${encodeURIComponent(sessionId)}`, {
       cache: "no-store",
     });
     const data = await response.json();
@@ -471,7 +471,7 @@ async function copyAttachCommand(sessionId) {
 
 async function killSession(sessionId) {
   try {
-    const response = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/kill`, {
+    const response = await fetch(`http://100.92.214.123:8420/api/sessions/${encodeURIComponent(sessionId)}/kill`, {
       method: "POST",
     });
     const data = await response.json();
@@ -488,7 +488,7 @@ async function killSession(sessionId) {
 
 async function killAllSessions() {
   try {
-    const response = await fetch("/api/sessions/kill-all", { method: "POST" });
+    const response = await fetch("http://100.92.214.123:8420/api/sessions/kill-all", { method: "POST" });
     const data = await response.json();
     if (!data.success) {
       alert(data.error ? String(data.error) : "Failed to kill sessions");
@@ -503,7 +503,7 @@ async function killAllSessions() {
 
 async function launchTemplate(template) {
   try {
-    const response = await fetch("/api/launch", {
+    const response = await fetch("http://100.92.214.123:8420/api/launch", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ template }),
@@ -635,7 +635,7 @@ async function onTemplateChange() {
 
 async function loadTemplateFields(templateName) {
   try {
-    const response = await fetch(`/api/templates/${encodeURIComponent(templateName)}`, {
+    const response = await fetch(`http://100.92.214.123:8420/api/templates/${encodeURIComponent(templateName)}`, {
       cache: "no-store",
     });
     const data = await response.json();
@@ -722,7 +722,7 @@ async function createTask(launch = false) {
   }
 
   try {
-    const response = await fetch("/api/tasks", {
+    const response = await fetch("http://100.92.214.123:8420/api/tasks", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...task, launch }),
@@ -751,7 +751,7 @@ async function createTask(launch = false) {
 
 async function fetchQueue() {
   try {
-    const response = await fetch("/api/queue", { cache: "no-store" });
+    const response = await fetch("http://100.92.214.123:8420/api/queue", { cache: "no-store" });
     const data = await response.json();
 
     // API returns { pending: [], "in-progress": [], completed: [], blocked: [] }
@@ -884,7 +884,7 @@ async function selectTask(taskId) {
 
   // Fetch task details
   try {
-    const res = await fetch(`/api/tasks/${encodeURIComponent(taskId)}`);
+    const res = await fetch(`http://100.92.214.123:8420/api/tasks/${encodeURIComponent(taskId)}`);
     if (!res.ok) {
       const data = await res.json();
       els.queueDetail.content.textContent = data.error || "Failed to load task";
@@ -937,7 +937,7 @@ function clearTaskSelection() {
 
 async function moveTaskToBlocked(taskId) {
   try {
-    const res = await fetch(`/api/tasks/${encodeURIComponent(taskId)}/block`, {
+    const res = await fetch(`http://100.92.214.123:8420/api/tasks/${encodeURIComponent(taskId)}/block`, {
       method: "POST",
     });
     const data = await res.json();
@@ -957,7 +957,7 @@ async function moveTaskToBlocked(taskId) {
 
 async function launchQueueTask(taskId) {
   try {
-    const response = await fetch(`/api/tasks/${encodeURIComponent(taskId)}/launch`, {
+    const response = await fetch(`http://100.92.214.123:8420/api/tasks/${encodeURIComponent(taskId)}/launch`, {
       method: "POST",
     });
     const data = await response.json();
@@ -978,7 +978,7 @@ async function launchQueueTask(taskId) {
 
 async function loadAgents() {
   try {
-    const response = await fetch("/api/agents", { cache: "no-store" });
+    const response = await fetch("http://100.92.214.123:8420/api/agents", { cache: "no-store" });
     const data = await response.json();
 
     if (data.agents && typeof data.agents === "object") {

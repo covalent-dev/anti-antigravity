@@ -1,0 +1,4 @@
+flask
+python-slugify
+PyYAML
+requests
