@@ -1,45 +1,111 @@
-# Anti-Antigravity 🎛️
+# Anti-Antigravity 🛸
 
-Task queue and agent orchestration for AI workflows.
+> The open-source agent orchestration system.
+> Like Antigravity, but free. And yours.
 
-## What It Does
+![Demo](screenshot.png)
 
-- **Task queue** — markdown-based, priority-sorted, inspectable
-- **Multi-agent** — Claude, Codex, GPT, Gemini, whatever
-- **Live dashboard** — watch your agents work in real-time
-- **BYO keys** — your API keys, no limits
+## The Future is Multi-Agent
+
+Single-agent workflows are hitting a wall. Complex tasks need coordination—multiple models working in parallel, handing off context, checking each other's work.
+
+The big players know this. That's why Google built Antigravity. That's why OpenAI is moving toward agent swarms. That's why Anthropic keeps talking about "computer use."
+
+**The problem?** Their solutions are closed, rate-limited, and expensive.
+
+**The fix?** Build it yourself.
+
+## What This Is
+
+A lightweight orchestration layer for running multiple AI agents in parallel:
+
+- **Task queue** with priorities, templates, and freeform prompts
+- **Multi-agent support** — Claude, GPT, Codex, Gemini, whatever
+- **Real-time dashboard** — watch your agents work
+- **BYO API keys** — no middleman, no markup, no limits
+- **Local-first** — runs on your machine, your VPS, your rules
+
+Think of it as a control tower for AI agents. You define the tasks, pick the models, and let them run.
+
+## Features
+
+- 🎯 **Task orchestration** — queue, prioritize, launch, monitor
+- 🤖 **Agent agnostic** — Claude, GPT-4, Codex, Gemini, local models
+- 🔑 **BYO keys** — use your own API keys, no rate limits
+- 📊 **Live dashboard** — kanban-style queue + session monitoring
+- ⚡ **Freeform tasks** — just describe what you want
+- 🎨 **Clean UI** — because terminal-only is for masochists
 
 ## Quick Start
 
 ```bash
-# Run the dashboard
-python3 -m src.dashboard.server
+git clone https://github.com/covalent-dev/anti-antigravity
+cd anti-antigravity
+
+# Set up your API keys
+cp .env.example .env
+# Edit .env with your keys
+
+# Run it
+docker-compose up
 
 # Visit http://localhost:8420
 ```
 
-For the React UI:
+Or without Docker:
+
 ```bash
-cd sandbox-ui
-npm install
-npm run dev
-# Visit http://localhost:5173
+pip install -r requirements.txt
+python -m src.dashboard.server
 ```
 
-## Structure
+## The Stack
 
-```
-~/.claude-context/orchestration/
-├── queue/
-│   ├── pending/      # tasks waiting
-│   ├── in-progress/  # currently running
-│   ├── blocked/      # stuck
-│   └── completed/    # done
-└── templates/        # task templates
+- **Backend**: Python + Flask
+- **Frontend**: React + Tailwind (lives in `sandbox-ui/`)
+- **Agents**: tmux sessions running Claude Code, Codex CLI, etc.
+- **Queue**: Markdown files (yes, really—simple and inspectable)
+
+## Why Markdown for Tasks?
+
+Because you can read them. Edit them. Version control them. Grep them.
+
+```markdown
+# Task: Implement user auth
+
+- Agent: claude
+- Priority: p1
+- Model: sonnet
+
+## Description
+Add JWT-based authentication to the API...
 ```
 
-Tasks are markdown files. No database.
+No database migrations. No ORM. Just files.
+
+## Philosophy
+
+1. **Own your infrastructure** — no vendor lock-in
+2. **Inspect everything** — no black boxes
+3. **Ship fast** — perfect is the enemy of done
+4. **AI-assisted, human-directed** — you're the orchestrator
+
+## Roadmap
+
+- [ ] Agent handoffs (pass context between agents)
+- [ ] Dependency chains (task B waits for task A)
+- [ ] Cost tracking per task
+- [ ] Plugin system for custom agents
+- [ ] Web-based task editor
+
+## Contributing
+
+PRs welcome. The bar is low: does it work? Ship it.
 
 ## License
 
-MIT
+MIT — do whatever you want.
+
+---
+
+*No VC funding. No rate limits. No bullshit.*
