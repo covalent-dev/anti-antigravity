@@ -11,18 +11,18 @@ Single-agent workflows are hitting a wall. Complex tasks need coordination—mul
 
 The big players know this. That's why Google built Antigravity. That's why OpenAI is moving toward agent swarms. That's why Anthropic keeps talking about "computer use."
 
-**The problem?** Their solutions are closed, rate-limited, and expensive.
+**The problem?** If you use seomthing to manage multi agent workflows like antigravity's "agent manager" you will be in rate limit hell. For power users running agents like Opus4.5, GPT5.2, for 8+ hours a day, you need something that you can use indefinitely.
 
 **The fix?** Build it yourself.
 
 ## What This Is
 
-A lightweight orchestration layer for running multiple AI agents in parallel:
+An extremely lightweight orchestration layer for running multiple AI agents in parallel:
 
 - **Task queue** with priorities, templates, and freeform prompts
 - **Multi-agent support** — Claude, GPT, Codex, Gemini, whatever
 - **Real-time dashboard** — watch your agents work
-- **BYO API keys** — no middleman, no markup, no limits
+- **BYO API keys or subscriotion** — no middleman, no markup, no limits
 - **Local-first** — runs on your machine, your VPS, your rules
 
 Think of it as a control tower for AI agents. You define the tasks, pick the models, and let them run.
@@ -107,5 +107,3 @@ PRs welcome. The bar is low: does it work? Ship it.
 MIT — do whatever you want.
 
 ---
-
-*No VC funding. No rate limits. No bullshit.*
