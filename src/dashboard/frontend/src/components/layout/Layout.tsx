@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Sidebar, type SidebarView } from './Sidebar';
 import { Header } from './Header';
+import { CommandPalette } from './CommandPalette';
 
 type View = 'sessions' | 'queue';
 
@@ -9,10 +10,46 @@ interface LayoutProps {
     onNewTask?: () => void;
     activeView?: View;
     onViewChange?: (view: View) => void;
+    onSelectTask?: (taskId: string) => void;
 }
 
-export function Layout({ children, onNewTask, activeView = 'queue', onViewChange }: LayoutProps) {
+function isEditableTarget(target: EventTarget | null) {
+    if (!target) return false;
+    if (!(target instanceof HTMLElement)) return false;
+    if (target.isContentEditable) return true;
+    const tag = target.tagName;
+    return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+}
+
+export function Layout({ children, onNewTask, activeView = 'queue', onViewChange, onSelectTask }: LayoutProps) {
     const [activeSidebarView, setActiveSidebarView] = useState<SidebarView>('dashboard');
+    const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+
+    useEffect(() => {
+        const onKeyDown = (event: KeyboardEvent) => {
+            const key = event.key.toLowerCase();
+            const isCmdK = (event.metaKey || event.ctrlKey) && key === 'k';
+            if (!isCmdK) return;
+
+            if (isCommandPaletteOpen) {
+                event.preventDefault();
+                setIsCommandPaletteOpen(false);
+                return;
+            }
+
+            if (isEditableTarget(event.target)) return;
+            event.preventDefault();
+            setIsCommandPaletteOpen(true);
+        };
+
+        window.addEventListener('keydown', onKeyDown);
+        return () => window.removeEventListener('keydown', onKeyDown);
+    }, [isCommandPaletteOpen]);
+
+    const commandPaletteViewChange = (view: View) => {
+        setActiveSidebarView('dashboard');
+        onViewChange?.(view);
+    };
 
     const showPlaceholder = activeSidebarView !== 'dashboard';
     const placeholderTitle = (() => {
@@ -39,6 +76,7 @@ export function Layout({ children, onNewTask, activeView = 'queue', onViewChange
                     activeView={activeView}
                     onViewChange={activeSidebarView === 'dashboard' ? onViewChange : undefined}
                     showViewToggle={activeSidebarView === 'dashboard'}
+                    onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
                 />
                 <main className="flex-1 overflow-auto bg-black relative">
                     {children}
@@ -53,6 +91,20 @@ export function Layout({ children, onNewTask, activeView = 'queue', onViewChange
                         </div>
                     )}
                 </main>
+                <CommandPalette
+                    open={isCommandPaletteOpen}
+                    onOpenChange={setIsCommandPaletteOpen}
+                    onNewTask={() => {
+                        setActiveSidebarView('dashboard');
+                        onNewTask?.();
+                    }}
+                    onViewChange={commandPaletteViewChange}
+                    onSelectTask={(taskId) => {
+                        setActiveSidebarView('dashboard');
+                        onViewChange?.('queue');
+                        onSelectTask?.(taskId);
+                    }}
+                />
 
                 {/* Status Bar */}
                 <footer className="h-6 bg-black border-t border-white/10 text-gray-500 flex items-center px-3 text-xs justify-between select-none font-sans">

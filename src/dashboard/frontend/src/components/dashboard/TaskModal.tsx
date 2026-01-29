@@ -23,14 +23,21 @@ export function TaskModal({ isOpen, onClose }: TaskModalProps) {
     const [launchImmediately, setLaunchImmediately] = useState(true);
     const [submitError, setSubmitError] = useState<string | null>(null);
 
+    const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null;
+
     const getErrorMessage = (error: unknown) => {
         if (axios.isAxiosError(error)) {
-            const data = error.response?.data as any;
-            if (data && typeof data === 'object') {
-                if (Array.isArray(data.missing) && data.missing.length > 0 && typeof data.error === 'string') {
-                    return `${data.error}: ${data.missing.join(', ')}`;
+            const data = error.response?.data;
+            if (isRecord(data)) {
+                const maybeMissing = data.missing;
+                const maybeError = data.error;
+                if (Array.isArray(maybeMissing) && maybeMissing.length > 0 && typeof maybeError === 'string') {
+                    const missingStrings = maybeMissing.filter((m): m is string => typeof m === 'string');
+                    if (missingStrings.length === maybeMissing.length) {
+                        return `${maybeError}: ${missingStrings.join(', ')}`;
+                    }
                 }
-                if (typeof data.error === 'string') return data.error;
+                if (typeof maybeError === 'string') return maybeError;
                 if (typeof data.message === 'string') return data.message;
             }
             return error.message || 'Request failed';
@@ -86,11 +93,10 @@ export function TaskModal({ isOpen, onClose }: TaskModalProps) {
         }
     }, [templateDetail]);
 
-    useEffect(() => {
-        if (!isOpen) {
-            setSubmitError(null);
-        }
-    }, [isOpen]);
+    const handleClose = () => {
+        setSubmitError(null);
+        onClose();
+    };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -118,7 +124,7 @@ export function TaskModal({ isOpen, onClose }: TaskModalProps) {
     const isPending = createMutation.isPending || quickMutation.isPending;
 
     return (
-        <Dialog open={isOpen} onClose={onClose} className="relative z-50 font-sans">
+        <Dialog open={isOpen} onClose={handleClose} className="relative z-50 font-sans">
             {/* Solid overlay, no blur */}
             <div className="fixed inset-0 bg-black/80" aria-hidden="true" />
 
@@ -126,7 +132,7 @@ export function TaskModal({ isOpen, onClose }: TaskModalProps) {
                 <Dialog.Panel className="w-full max-w-2xl bg-black border border-white/10 text-gray-200 flex flex-col max-h-[90vh] shadow-2xl">
                     <div className="flex justify-between items-center p-4 border-b border-white/10">
                         <Dialog.Title className="text-lg font-semibold text-white">Create New Task</Dialog.Title>
-                        <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors">
+                        <button onClick={handleClose} className="text-gray-500 hover:text-white transition-colors">
                             <X size={20} />
                         </button>
                     </div>

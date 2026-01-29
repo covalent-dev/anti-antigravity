@@ -7,9 +7,16 @@ interface HeaderProps {
     activeView?: View;
     onViewChange?: (view: View) => void;
     showViewToggle?: boolean;
+    onOpenCommandPalette?: () => void;
 }
 
-export function Header({ onNewTask, activeView = 'queue', onViewChange, showViewToggle = !!onViewChange }: HeaderProps) {
+export function Header({
+    onNewTask,
+    activeView = 'queue',
+    onViewChange,
+    showViewToggle = !!onViewChange,
+    onOpenCommandPalette,
+}: HeaderProps) {
     return (
         <header className="h-12 bg-black border-b border-white/10 flex items-center justify-between px-4 select-none">
             <div className="flex items-center gap-4">
@@ -45,7 +52,10 @@ export function Header({ onNewTask, activeView = 'queue', onViewChange, showView
 
             {/* Middle - Search/Command Palette trigger */}
             <div className="flex-1 max-w-xl mx-4">
-                <button className="w-full bg-black hover:bg-white/5 text-left px-3 py-1.5 text-sm text-gray-500 border border-white/10 rounded-md flex items-center gap-2 transition-colors group hover:border-gray-600">
+                <button
+                    onClick={onOpenCommandPalette}
+                    className="w-full bg-black hover:bg-white/5 text-left px-3 py-1.5 text-sm text-gray-500 border border-white/10 rounded-md flex items-center gap-2 transition-colors group hover:border-gray-600"
+                >
                     <Search size={14} className="group-hover:text-gray-300" />
                     <span className="group-hover:text-gray-300">Search or jump to...</span>
                     <span className="ml-auto text-xs text-gray-600 border border-white/10 px-1 rounded group-hover:text-gray-400 group-hover:border-gray-500">⌘K</span>

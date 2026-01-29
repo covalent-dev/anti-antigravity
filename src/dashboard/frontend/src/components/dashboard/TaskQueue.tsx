@@ -106,8 +106,16 @@ function TaskDetailPanel({ taskId, onClose, onLaunch }: TaskDetailPanelProps) {
     );
 }
 
-export function TaskQueue() {
-    const [selectedTask, setSelectedTask] = useState<string | null>(null);
+interface TaskQueueProps {
+    selectedTaskId?: string | null;
+    onSelectedTaskIdChange?: (taskId: string | null) => void;
+}
+
+export function TaskQueue({ selectedTaskId, onSelectedTaskIdChange }: TaskQueueProps) {
+    const [uncontrolledSelectedTaskId, setUncontrolledSelectedTaskId] = useState<string | null>(null);
+    const isControlled = selectedTaskId !== undefined;
+    const selectedTask = isControlled ? selectedTaskId : uncontrolledSelectedTaskId;
+    const setSelectedTask = isControlled ? (onSelectedTaskIdChange ?? (() => {})) : setUncontrolledSelectedTaskId;
     const queryClient = useQueryClient();
 
     const { data: queue, isLoading } = useQuery({

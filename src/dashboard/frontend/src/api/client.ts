@@ -50,6 +50,15 @@ export interface TemplateDetail {
     }>;
 }
 
+export interface CreateTaskPayload {
+    template: string;
+    fields: Record<string, string>;
+    agent?: string;
+    model?: string;
+    priority?: string;
+    launch?: boolean;
+}
+
 export const fetchSessions = async () => {
     const { data } = await api.get<{ sessions: Session[] }>('/sessions');
     return data.sessions;
@@ -70,7 +79,7 @@ export const fetchTemplateDetail = async (name: string) => {
     return data;
 };
 
-export const createTask = async (payload: any) => {
+export const createTask = async (payload: CreateTaskPayload) => {
     const { data } = await api.post('/tasks', payload);
     return data;
 };

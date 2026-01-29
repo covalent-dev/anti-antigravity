@@ -9,11 +9,19 @@ type View = 'sessions' | 'queue';
 export function Dashboard() {
     const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
     const [activeView, setActiveView] = useState<View>('queue');
+    const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
     return (
-        <Layout onNewTask={() => setIsTaskModalOpen(true)} activeView={activeView} onViewChange={setActiveView}>
+        <Layout
+            onNewTask={() => setIsTaskModalOpen(true)}
+            activeView={activeView}
+            onViewChange={setActiveView}
+            onSelectTask={setSelectedTaskId}
+        >
             {activeView === 'sessions' && <SessionBoard />}
-            {activeView === 'queue' && <TaskQueue />}
+            {activeView === 'queue' && (
+                <TaskQueue selectedTaskId={selectedTaskId} onSelectedTaskIdChange={setSelectedTaskId} />
+            )}
             <TaskModal isOpen={isTaskModalOpen} onClose={() => setIsTaskModalOpen(false)} />
         </Layout>
     );
