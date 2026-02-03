@@ -777,6 +777,18 @@ def api_get_task(task_id: str):
     return jsonify({"error": "Task not found"}), 404
 
 
+@app.route("/api/stats")
+def api_stats():
+    """Get queue statistics (counts only)."""
+    stats = {"pending": 0, "in-progress": 0, "blocked": 0, "completed": 0}
+    for state in stats.keys():
+        folder = QUEUE_ROOT / state
+        if folder.exists():
+            stats[state] = len(list(folder.glob("task-*.md")))
+    stats["total"] = sum(stats.values())
+    return jsonify(stats)
+
+
 @app.route("/api/queue")
 def api_queue():
     result = {"pending": [], "in-progress": [], "blocked": [], "completed": []}
@@ -788,14 +800,18 @@ def api_queue():
         for task_file in folder.glob("task-*.md"):
             try:
                 task = _parse_task_spec(task_file)
-                result[state].append({
+                task_data = {
                     "id": task.get("id"),
                     "title": task.get("title"),
                     "agent": task.get("agent"),
                     "priority": task.get("priority"),
                     "project": task.get("project"),
                     "created": task.get("created"),
-                })
+                }
+                # Add mtime for completed tasks (for time-based sorting)
+                if state == "completed":
+                    task_data["mtime"] = task_file.stat().st_mtime
+                result[state].append(task_data)
             except Exception:
                 continue
 
@@ -817,8 +833,12 @@ def api_queue():
             return (3, item.get("id") or "")
         return (99, item.get("id") or "")  # Unknown priority last
 
-    for state in result:
+    # Sort pending, in-progress, blocked by priority
+    for state in ["pending", "in-progress", "blocked"]:
         result[state].sort(key=priority_sort_key)
+    
+    # Sort completed by modification time (most recent first)
+    result["completed"].sort(key=lambda x: x.get("mtime", 0), reverse=True)
 
     return jsonify(result)
 
