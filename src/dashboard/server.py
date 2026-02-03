@@ -791,6 +791,25 @@ def api_delete_task(task_id: str):
     return jsonify({"error": "Task not found"}), 404
 
 
+@app.route("/api/tasks/<task_id>", methods=["PUT"])
+def api_update_task(task_id: str):
+    """Update task spec content."""
+    data = request.get_json(silent=True) or {}
+    content = data.get("content")
+    if content is None:
+        return jsonify({"error": "content is required"}), 400
+
+    for state in ["pending", "in-progress", "blocked", "completed"]:
+        path = QUEUE_ROOT / state / f"{task_id}.md"
+        if path.exists():
+            try:
+                path.write_text(content, encoding="utf-8")
+                return jsonify({"success": True, "task_id": task_id, "state": state})
+            except Exception as exc:
+                return jsonify({"error": str(exc)}), 500
+    return jsonify({"error": "Task not found"}), 404
+
+
 @app.route("/api/stats")
 def api_stats():
     """Get queue statistics (counts only)."""
