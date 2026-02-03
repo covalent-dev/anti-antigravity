@@ -732,7 +732,7 @@ def api_agents():
         {
             "id": "gemini",
             "name": "Gemini (Google)",
-            "models": ["gemini-3-flash", "gemini-2.5-pro", "gemini-2.5-flash"],
+            "models": ["gemini-3-pro-preview", "gemini-3-flash", "gemini-2.5-pro", "gemini-2.5-flash"],
             "default": "gemini-2.5-pro",
         },
         {
