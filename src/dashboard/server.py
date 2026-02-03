@@ -835,6 +835,48 @@ def api_move_task(task_id: str):
     return jsonify({"error": "Task not found"}), 404
 
 
+@app.route("/api/tasks/<task_id>/duplicate", methods=["POST"])
+def api_duplicate_task(task_id: str):
+    """Duplicate a task with a new ID."""
+    for state in ["pending", "in-progress", "blocked", "completed"]:
+        path = QUEUE_ROOT / state / f"{task_id}.md"
+        if path.exists():
+            try:
+                content = path.read_text()
+                # Extract title for new ID
+                title_match = re.search(r"^# Task:\s*(.+)", content, re.MULTILINE)
+                title = title_match.group(1).strip() if title_match else "duplicated-task"
+                new_task_id = generate_task_id(title + " (copy)")
+
+                # Update ID in content
+                new_content = re.sub(
+                    r"(\*\*ID:\*\*\s*)(\S+)",
+                    f"\\1{new_task_id}",
+                    content
+                )
+                # Update created date
+                new_content = re.sub(
+                    r"(\*\*Created:\*\*\s*)(\S+)",
+                    f"\\g<1>{datetime.now().date().isoformat()}",
+                    new_content
+                )
+
+                # Save to pending
+                new_path = QUEUE_ROOT / "pending" / f"{new_task_id}.md"
+                new_path.parent.mkdir(parents=True, exist_ok=True)
+                new_path.write_text(new_content, encoding="utf-8")
+
+                return jsonify({
+                    "success": True,
+                    "original_id": task_id,
+                    "new_task_id": new_task_id,
+                    "state": "pending"
+                })
+            except Exception as exc:
+                return jsonify({"error": str(exc)}), 500
+    return jsonify({"error": "Task not found"}), 404
+
+
 @app.route("/api/stats")
 def api_stats():
     """Get queue statistics (counts only)."""
