@@ -260,8 +260,15 @@ export function TaskModal({ isOpen, onClose }: TaskModalProps) {
 
                                 {templateDetail && (
                                     <div className="space-y-4 border-t border-white/10 pt-4">
-                                        <h4 className="text-sm font-semibold text-blue-400">Template Fields</h4>
-                                        {templateDetail.fields.filter(f => !f.auto).map(field => (
+                                        <h4 className="text-sm font-semibold text-blue-400">Template Preview</h4>
+                                        <div className="max-h-64 overflow-y-auto bg-zinc-900 border border-white/10 rounded-md p-3">
+                                            <pre className="text-xs text-gray-300 whitespace-pre-wrap font-mono">{templateDetail.content?.slice(0, 2000)}{templateDetail.content?.length > 2000 ? '\n...(truncated)' : ''}</pre>
+                                        </div>
+
+                                        {templateDetail.fields.filter(f => !f.auto).length > 0 && (
+                                            <>
+                                                <h4 className="text-sm font-semibold text-blue-400 mt-4">Template Fields</h4>
+                                                {templateDetail.fields.filter(f => !f.auto).map(field => (
                                             <div key={field.name}>
                                                 <label className="block text-xs font-semibold text-gray-400 mb-1">
                                                     {field.name} {field.required && <span className="text-red-400">*</span>}
@@ -276,6 +283,8 @@ export function TaskModal({ isOpen, onClose }: TaskModalProps) {
                                                 />
                                             </div>
                                         ))}
+                                            </>
+                                        )}
                                     </div>
                                 )}
                             </>

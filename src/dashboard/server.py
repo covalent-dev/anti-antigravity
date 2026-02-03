@@ -451,6 +451,9 @@ def api_templates():
     templates: List[Dict[str, str]] = []
     if TASK_TEMPLATES_DIR.exists():
         for template in sorted(TASK_TEMPLATES_DIR.glob("*.md")):
+            # Skip sync-conflict files
+            if ".sync-conflict-" in template.name:
+                continue
             templates.append({"name": template.stem, "path": template.name})
     return jsonify({"templates": templates})
 
