@@ -810,6 +810,31 @@ def api_update_task(task_id: str):
     return jsonify({"error": "Task not found"}), 404
 
 
+@app.route("/api/tasks/<task_id>/move", methods=["POST"])
+def api_move_task(task_id: str):
+    """Move task to a different queue."""
+    data = request.get_json(silent=True) or {}
+    target_state = (data.get("to") or "").strip()
+    valid_states = ["pending", "in-progress", "blocked", "completed"]
+
+    if target_state not in valid_states:
+        return jsonify({"error": f"Invalid target state. Must be one of: {valid_states}"}), 400
+
+    for state in valid_states:
+        path = QUEUE_ROOT / state / f"{task_id}.md"
+        if path.exists():
+            if state == target_state:
+                return jsonify({"success": True, "task_id": task_id, "from": state, "to": target_state, "message": "Already in target state"})
+            try:
+                target_path = QUEUE_ROOT / target_state / f"{task_id}.md"
+                target_path.parent.mkdir(parents=True, exist_ok=True)
+                shutil.move(str(path), str(target_path))
+                return jsonify({"success": True, "task_id": task_id, "from": state, "to": target_state})
+            except Exception as exc:
+                return jsonify({"error": str(exc)}), 500
+    return jsonify({"error": "Task not found"}), 404
+
+
 @app.route("/api/stats")
 def api_stats():
     """Get queue statistics (counts only)."""
