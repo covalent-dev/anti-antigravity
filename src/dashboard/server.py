@@ -42,7 +42,7 @@ DASHBOARD_DEBUG = os.environ.get("DASHBOARD_DEBUG", "0") == "1"
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 TEMPLATES_DIR = PROJECT_ROOT / "templates"
-ORCH_CONTEXT_DIR = Path("~/.claude-context/orchestration").expanduser()
+ORCH_CONTEXT_DIR = Path("~/.claude-context/orchestrator").expanduser()
 TASK_TEMPLATES_DIR = ORCH_CONTEXT_DIR / "templates"
 QUEUE_ROOT = ORCH_CONTEXT_DIR / "queue"
 
