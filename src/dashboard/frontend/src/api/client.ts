@@ -95,6 +95,17 @@ export const killAllSessions = async () => {
     return data;
 };
 
+export interface SessionOutput {
+    session_id: string;
+    output: string;
+    lines: number;
+}
+
+export const fetchSessionOutput = async (sessionId: string, lines: number = 100) => {
+    const { data } = await api.get<SessionOutput>(`/sessions/${sessionId}/output?lines=${lines}`);
+    return data;
+};
+
 // Freeform task creation
 export const createQuickTask = async (payload: { prompt: string; agent?: string; model?: string; priority?: string; launch?: boolean }) => {
     const { data } = await api.post('/tasks/quick', payload);

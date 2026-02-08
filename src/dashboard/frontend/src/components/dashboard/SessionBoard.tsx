@@ -1,9 +1,12 @@
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchSessions, killSession, type Session } from '../../api/client';
 import { Play, Square, AlertCircle, CheckCircle, Clock, HelpCircle } from 'lucide-react';
 import { clsx } from 'clsx';
 
-function SessionCard({ session }: { session: Session }) {
+import { TerminalViewer } from './TerminalViewer';
+
+function SessionCard({ session, onClick }: { session: Session; onClick: () => void }) {
     const queryClient = useQueryClient();
     const killMutation = useMutation({
         mutationFn: killSession,
@@ -14,8 +17,17 @@ function SessionCard({ session }: { session: Session }) {
 
     const statusLabel = session.status.replace(/_/g, ' ');
 
+    const handleKillClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!confirm(`Kill session ${session.id}?`)) return;
+        killMutation.mutate(session.id);
+    };
+
     return (
-        <div className="bg-black p-3 border border-white/10 rounded-lg shadow-sm hover:border-blue-500/50 transition-colors group w-full">
+        <div
+            onClick={onClick}
+            className="bg-black p-3 border border-white/10 rounded-lg shadow-sm hover:border-blue-500/50 transition-colors group w-full cursor-pointer"
+        >
             <div className="flex justify-between items-start mb-2">
                 <h3 className="text-sm font-semibold text-white truncate" title={session.id}>
                     {session.id}
@@ -45,7 +57,7 @@ function SessionCard({ session }: { session: Session }) {
             <div className="flex justify-between items-center opacity-0 group-hover:opacity-100 transition-opacity">
                 <span className="text-xs text-purple-400 font-medium capitalize">{session.agent_type}</span>
                 <button
-                    onClick={() => killMutation.mutate(session.id)}
+                    onClick={handleKillClick}
                     className="text-red-400 hover:text-red-300 hover:bg-red-500/10 p-1 rounded transition-colors"
                     title="Kill Session"
                 >
@@ -57,6 +69,7 @@ function SessionCard({ session }: { session: Session }) {
 }
 
 export function SessionBoard() {
+    const [selectedSession, setSelectedSession] = useState<Session | null>(null);
     const { data: sessions, isLoading } = useQuery({
         queryKey: ['sessions'],
         queryFn: fetchSessions,
@@ -74,17 +87,29 @@ export function SessionBoard() {
     };
 
     return (
-        <div className="flex gap-4 h-full p-4 overflow-x-auto min-w-full font-sans">
-            <Column title="Idle" count={grouped.idle.length} items={grouped.idle} icon={<Clock size={16} />} />
-            <Column title="Working" count={grouped.working.length} items={grouped.working} icon={<Play size={16} />} />
-            <Column title="Needs Input" count={grouped.needs_input.length} items={grouped.needs_input} icon={<HelpCircle size={16} />} />
-            <Column title="Done" count={grouped.done.length} items={grouped.done} icon={<CheckCircle size={16} />} />
-            <Column title="Error" count={grouped.error.length} items={grouped.error} icon={<AlertCircle size={16} />} />
-        </div>
+        <>
+            <div className="flex gap-4 h-full p-4 overflow-x-auto min-w-full font-sans">
+                <Column title="Idle" count={grouped.idle.length} items={grouped.idle} icon={<Clock size={16} />} onSessionClick={setSelectedSession} />
+                <Column title="Working" count={grouped.working.length} items={grouped.working} icon={<Play size={16} />} onSessionClick={setSelectedSession} />
+                <Column title="Needs Input" count={grouped.needs_input.length} items={grouped.needs_input} icon={<HelpCircle size={16} />} onSessionClick={setSelectedSession} />
+                <Column title="Done" count={grouped.done.length} items={grouped.done} icon={<CheckCircle size={16} />} onSessionClick={setSelectedSession} />
+                <Column title="Error" count={grouped.error.length} items={grouped.error} icon={<AlertCircle size={16} />} onSessionClick={setSelectedSession} />
+            </div>
+
+            {selectedSession && (
+                <TerminalViewer session={selectedSession} onClose={() => setSelectedSession(null)} />
+            )}
+        </>
     );
 }
 
-function Column({ title, count, items, icon }: { title: string, count: number, items: Session[], icon: React.ReactNode }) {
+function Column({ title, count, items, icon, onSessionClick }: {
+    title: string;
+    count: number;
+    items: Session[];
+    icon: React.ReactNode;
+    onSessionClick: (session: Session) => void;
+}) {
     return (
         <div className="flex-1 min-w-[280px] bg-black flex flex-col border border-white/10 rounded-lg overflow-hidden">
             <div className="flex items-center justify-between p-3 border-b border-white/10 bg-white/5">
@@ -95,7 +120,13 @@ function Column({ title, count, items, icon }: { title: string, count: number, i
                 <span className="text-xs bg-white/5 text-gray-400 px-2 py-0.5 rounded-full font-medium">{count}</span>
             </div>
             <div className="flex-1 bg-black p-2 space-y-2 overflow-y-auto">
-                {items.map(session => <SessionCard key={session.id} session={session} />)}
+                {items.map(session => (
+                    <SessionCard
+                        key={session.id}
+                        session={session}
+                        onClick={() => onSessionClick(session)}
+                    />
+                ))}
                 {items.length === 0 && <div className="text-xs text-gray-600 text-center py-4">No sessions</div>}
             </div>
         </div>
