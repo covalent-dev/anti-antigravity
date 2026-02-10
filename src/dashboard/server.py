@@ -241,13 +241,13 @@ def _list_tmux_sessions() -> List[Dict[str, str]]:
             continue
         tmux_name, created, windows = parts[0], parts[1], parts[2]
 
-        # Only include sessions we likely own.
+        # Prefer the historical "orch-" id mapping for status lookup.
+        # For non-prefixed sessions, surface them directly so active
+        # tmux work is still visible in the dashboard.
         if tmux_name.startswith("orch-"):
             session_id = tmux_name[len("orch-"):]
-        elif tmux_name.startswith("task-"):
-            session_id = tmux_name
         else:
-            continue
+            session_id = tmux_name
 
         sessions.append({
             "id": session_id,
@@ -333,8 +333,12 @@ def api_sessions():
     for session in _list_tmux_sessions():
         session_id = session["id"]
         payload = status_map.get(session_id, {})
-        state = payload.get("state") or "idle"
-        message = payload.get("message") or "Running"
+        state = payload.get("state")
+        if not state:
+            state = "running" if not status_server_ok else "idle"
+        message = payload.get("message")
+        if not message:
+            message = "Running (status unavailable)" if not status_server_ok else "Running"
         preview: List[str] | None = None
         preview_result = _run_tmux([
             "capture-pane",
