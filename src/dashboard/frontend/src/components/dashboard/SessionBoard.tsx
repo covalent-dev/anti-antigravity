@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchSessions, killSession, type Session } from '../../api/client';
-import { Play, Square, AlertCircle, CheckCircle, Clock, HelpCircle } from 'lucide-react';
+import { Play, Square, AlertCircle, CheckCircle, Clock, HelpCircle, Search } from 'lucide-react';
 import { clsx } from 'clsx';
 
 import { TerminalViewer } from './TerminalViewer';
@@ -72,6 +72,8 @@ export function SessionBoard() {
     const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
     const [selectedSessionSnapshot, setSelectedSessionSnapshot] = useState<Session | null>(null);
     const [followActiveSession, setFollowActiveSession] = useState(true);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [agentFilter, setAgentFilter] = useState('all');
     const { data: sessions, isLoading } = useQuery({
         queryKey: ['sessions'],
         queryFn: fetchSessions,
@@ -80,13 +82,31 @@ export function SessionBoard() {
 
     if (isLoading) return <div className="p-4 text-gray-500">Loading sessions...</div>;
 
+    const filteredSessions = useMemo(() => {
+        if (!sessions) return [];
+
+        const query = searchQuery.trim().toLowerCase();
+        return sessions.filter(session => {
+            const matchesQuery = !query
+                || session.id.toLowerCase().includes(query)
+                || session.message.toLowerCase().includes(query);
+            const matchesAgent = agentFilter === 'all' || session.agent_type === agentFilter;
+            return matchesQuery && matchesAgent;
+        });
+    }, [agentFilter, searchQuery, sessions]);
+
     const grouped = {
-        idle: sessions?.filter(s => s.status === 'idle') || [],
-        working: sessions?.filter(s => ['working', 'running'].includes(s.status)) || [],
-        needs_input: sessions?.filter(s => s.status === 'needs_input') || [],
-        done: sessions?.filter(s => s.status === 'done') || [],
-        error: sessions?.filter(s => s.status === 'error') || [],
+        idle: filteredSessions.filter(s => s.status === 'idle'),
+        working: filteredSessions.filter(s => ['working', 'running'].includes(s.status)),
+        needs_input: filteredSessions.filter(s => s.status === 'needs_input'),
+        done: filteredSessions.filter(s => s.status === 'done'),
+        error: filteredSessions.filter(s => s.status === 'error'),
     };
+
+    const agentOptions = useMemo(() => {
+        const agents = new Set((sessions || []).map(session => session.agent_type));
+        return ['all', ...Array.from(agents).sort()];
+    }, [sessions]);
 
     const selectedSession = selectedSessionId
         ? sessions?.find(s => s.id === selectedSessionId) ?? selectedSessionSnapshot
@@ -118,7 +138,33 @@ export function SessionBoard() {
 
     return (
         <>
-            <div className="px-4 pt-3 flex justify-end">
+            <div className="px-4 pt-3 flex flex-wrap items-center gap-3 justify-between">
+                <div className="flex flex-wrap items-center gap-2">
+                    <div className="relative">
+                        <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-500" />
+                        <input
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="Search session id or message"
+                            className="h-8 w-64 bg-black border border-white/10 rounded-md pl-8 pr-2 text-xs text-gray-200 placeholder:text-gray-600 focus:outline-none focus:border-blue-500/40"
+                        />
+                    </div>
+                    <select
+                        value={agentFilter}
+                        onChange={(e) => setAgentFilter(e.target.value)}
+                        className="h-8 bg-black border border-white/10 rounded-md px-2 text-xs text-gray-300 focus:outline-none focus:border-blue-500/40"
+                    >
+                        {agentOptions.map(option => (
+                            <option key={option} value={option} className="bg-black text-gray-200">
+                                {option === 'all' ? 'All agents' : option}
+                            </option>
+                        ))}
+                    </select>
+                    <span className="text-xs text-gray-500">
+                        Showing {filteredSessions.length} / {sessions?.length || 0}
+                    </span>
+                </div>
+
                 <label className="inline-flex items-center gap-2 text-xs text-gray-400 select-none">
                     <input
                         type="checkbox"
