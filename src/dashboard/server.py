@@ -10,6 +10,7 @@ from __future__ import annotations
 import os
 import sys
 import re
+import json
 import shutil
 import subprocess
 from datetime import datetime
@@ -63,6 +64,29 @@ def _status_client() -> StatusClient:
     return StatusClient(server_url=STATUS_SERVER_URL)
 
 
+STATUS_FALLBACK_DIR = Path("~/.orch-v2/status").expanduser()
+ANSI_ESCAPE_RE = re.compile(r"\x1B\[[0-?]*[ -/]*[@-~]")
+ERROR_PATTERNS = (
+    "traceback",
+    "exception",
+    "fatal:",
+    "error:",
+    "failed",
+)
+DONE_PATTERNS = (
+    "task complete",
+    "task completed",
+    "completed end-to-end",
+    "done.",
+)
+WORKING_PATTERNS = (
+    "esc to interrupt",
+    "working (",
+    "planning ",
+    "running job bot",
+)
+
+
 def _detect_agent_type(session_id: str) -> str:
     lowered = session_id.lower()
     for candidate in ("claude", "codex", "gemini", "terminal"):
@@ -79,7 +103,81 @@ def _fetch_status_map() -> Tuple[Dict[str, Dict[str, Any]], bool]:
             return sessions, True
         return {}, True
     except Exception:
-        return {}, False
+        # Fallback: if status-server is down, read status files directly.
+        if not STATUS_FALLBACK_DIR.exists():
+            return {}, False
+        sessions: Dict[str, Dict[str, Any]] = {}
+        try:
+            for path in STATUS_FALLBACK_DIR.glob("*.json"):
+                try:
+                    sessions[path.stem] = json.loads(path.read_text(encoding="utf-8"))
+                except Exception:
+                    continue
+        except Exception:
+            return {}, False
+        return sessions, True
+
+
+def _normalize_state(raw_state: Any) -> str | None:
+    if not raw_state:
+        return None
+    text = str(raw_state).strip().lower()
+    if not text:
+        return None
+    mapping = {
+        "in_progress": "working",
+        "in-progress": "working",
+        "running": "working",
+        "blocked": "needs_input",
+        "complete": "done",
+        "completed": "done",
+        "failed": "error",
+    }
+    text = mapping.get(text, text)
+    if text in {"idle", "working", "needs_input", "done", "error"}:
+        return text
+    return None
+
+
+def _strip_ansi(text: str) -> str:
+    return ANSI_ESCAPE_RE.sub("", text)
+
+
+def _infer_status_from_output(lines: List[str], last_activity_ts: int | None) -> Tuple[str, str]:
+    cleaned = [_strip_ansi(line).strip() for line in lines if line and line.strip()]
+    if not cleaned:
+        return "running", "Running"
+
+    recent_lines = cleaned[-20:]
+    recent_text = "\n".join(recent_lines).lower()
+    newest_first = list(reversed(recent_lines))
+
+    for line in newest_first:
+        lowered = line.lower()
+        if any(pattern in lowered for pattern in ERROR_PATTERNS):
+            return "error", line[:160]
+
+    prompt_line = next((ln for ln in newest_first if ln.startswith("› ")), None)
+    done_line = next((ln for ln in newest_first if any(pat in ln.lower() for pat in DONE_PATTERNS)), None)
+    if done_line and prompt_line:
+        return "done", done_line[:160]
+
+    working_line = next((ln for ln in newest_first if any(pat in ln.lower() for pat in WORKING_PATTERNS)), None)
+    if working_line:
+        return "working", working_line[:160]
+
+    if prompt_line:
+        prompt_text = prompt_line[2:].strip()
+        return "needs_input", f"Awaiting input: {prompt_text[:140]}" if prompt_text else "Awaiting input"
+
+    now_ts = int(datetime.now().timestamp())
+    if last_activity_ts is not None and now_ts - last_activity_ts > 300:
+        return "idle", "Idle"
+
+    if "waiting" in recent_text:
+        return "idle", "Waiting"
+
+    return "running", "Running"
 
 
 def _display_path(path: Path) -> str:
@@ -227,7 +325,7 @@ def _list_tmux_sessions() -> List[Dict[str, str]]:
     result = _run_tmux([
         "list-sessions",
         "-F",
-        "#{session_name}|#{session_created}|#{session_windows}",
+        "#{session_name}|#{session_created}|#{session_activity}|#{session_windows}",
     ])
     if result.returncode != 0:
         return []
@@ -237,9 +335,9 @@ def _list_tmux_sessions() -> List[Dict[str, str]]:
         if not line:
             continue
         parts = line.split("|")
-        if len(parts) < 3:
+        if len(parts) < 4:
             continue
-        tmux_name, created, windows = parts[0], parts[1], parts[2]
+        tmux_name, created, activity, windows = parts[0], parts[1], parts[2], parts[3]
 
         # Prefer the historical "orch-" id mapping for status lookup.
         # For non-prefixed sessions, surface them directly so active
@@ -253,6 +351,7 @@ def _list_tmux_sessions() -> List[Dict[str, str]]:
             "id": session_id,
             "tmux_name": tmux_name,
             "created": created,
+            "activity": activity,
             "windows": windows,
         })
 
@@ -333,23 +432,34 @@ def api_sessions():
     for session in _list_tmux_sessions():
         session_id = session["id"]
         payload = status_map.get(session_id, {})
-        state = payload.get("state")
-        if not state:
-            state = "running" if not status_server_ok else "idle"
-        message = payload.get("message")
-        if not message:
-            message = "Running (status unavailable)" if not status_server_ok else "Running"
         preview: List[str] | None = None
-        preview_result = _run_tmux([
+        captured_lines: List[str] = []
+        pane_result = _run_tmux([
             "capture-pane",
             "-t", session["tmux_name"],
             "-p",
-            "-S", "-5",
+            "-S", "-120",
         ])
-        if preview_result.returncode == 0:
-            preview_lines = [ln for ln in preview_result.stdout.splitlines() if ln.strip() != ""]
+        if pane_result.returncode == 0:
+            preview_lines = [ln for ln in pane_result.stdout.splitlines() if ln.strip() != ""]
+            captured_lines = preview_lines[-80:]
             if preview_lines:
                 preview = preview_lines[-3:]
+
+        state = _normalize_state(payload.get("state"))
+        message = (payload.get("message") or "").strip()
+        if not state:
+            activity_ts: int | None = None
+            try:
+                activity_ts = int(session.get("activity", ""))
+            except Exception:
+                activity_ts = None
+            inferred_state, inferred_message = _infer_status_from_output(captured_lines, activity_ts)
+            state = inferred_state
+            if not message:
+                message = inferred_message
+        if not message:
+            message = "Running"
 
         sessions.append({
             "id": session_id,
