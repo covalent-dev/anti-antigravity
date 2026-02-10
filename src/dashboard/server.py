@@ -84,6 +84,12 @@ WORKING_PATTERNS = (
     "working (",
     "planning ",
     "running job bot",
+    "tracking run progress",
+    "waiting for background terminal",
+    "background terminals running",
+)
+INFORMATIONAL_PROMPT_PREFIXES = (
+    "use /",
 )
 
 
@@ -143,6 +149,15 @@ def _strip_ansi(text: str) -> str:
     return ANSI_ESCAPE_RE.sub("", text)
 
 
+def _is_informational_prompt(prompt_text: str) -> bool:
+    lowered = (prompt_text or "").strip().lower()
+    if not lowered:
+        return False
+    if lowered == "use /skills to list available skills":
+        return True
+    return any(lowered.startswith(prefix) for prefix in INFORMATIONAL_PROMPT_PREFIXES)
+
+
 def _infer_status_from_output(lines: List[str], last_activity_ts: int | None) -> Tuple[str, str]:
     cleaned = [_strip_ansi(line).strip() for line in lines if line and line.strip()]
     if not cleaned:
@@ -158,6 +173,12 @@ def _infer_status_from_output(lines: List[str], last_activity_ts: int | None) ->
             return "error", line[:160]
 
     prompt_line = next((ln for ln in newest_first if ln.startswith("› ")), None)
+    prompt_text = ""
+    if prompt_line:
+        prompt_text = prompt_line[2:].strip()
+        if _is_informational_prompt(prompt_text):
+            prompt_line = None
+            prompt_text = ""
     done_line = next((ln for ln in newest_first if any(pat in ln.lower() for pat in DONE_PATTERNS)), None)
     if done_line and prompt_line:
         return "done", done_line[:160]
@@ -167,7 +188,6 @@ def _infer_status_from_output(lines: List[str], last_activity_ts: int | None) ->
         return "working", working_line[:160]
 
     if prompt_line:
-        prompt_text = prompt_line[2:].strip()
         return "needs_input", f"Awaiting input: {prompt_text[:140]}" if prompt_text else "Awaiting input"
 
     now_ts = int(datetime.now().timestamp())
