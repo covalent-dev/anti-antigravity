@@ -1,5 +1,5 @@
 import { Dialog } from '@headlessui/react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Square, X } from 'lucide-react';
 import { clsx } from 'clsx';
@@ -14,6 +14,7 @@ interface TerminalViewerProps {
 export function TerminalViewer({ session, onClose }: TerminalViewerProps) {
     const queryClient = useQueryClient();
     const [autoScroll, setAutoScroll] = useState(true);
+    const [killError, setKillError] = useState<string | null>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
     const queryKey = useMemo(() => ['session-output', session.id], [session.id]);
@@ -24,6 +25,17 @@ export function TerminalViewer({ session, onClose }: TerminalViewerProps) {
         refetchInterval: 1000,
         retry: 2,
         staleTime: 0,
+    });
+
+    const killMutation = useMutation({
+        mutationFn: () => killSession(session.id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['sessions'] });
+            onClose();
+        },
+        onError: (err) => {
+            setKillError(err instanceof Error ? err.message : 'Failed to kill session.');
+        },
     });
 
     // Auto-scroll when new output arrives, unless the user has scrolled up.
@@ -44,11 +56,10 @@ export function TerminalViewer({ session, onClose }: TerminalViewerProps) {
         setAutoScroll(isAtBottom);
     };
 
-    const handleKillSession = async () => {
+    const handleKillSession = () => {
         if (!confirm(`Kill session ${session.id}?`)) return;
-        await killSession(session.id);
-        queryClient.invalidateQueries({ queryKey: ['sessions'] });
-        onClose();
+        setKillError(null);
+        killMutation.mutate();
     };
 
     const statusLabel = session.status.replace(/_/g, ' ');
@@ -84,16 +95,23 @@ export function TerminalViewer({ session, onClose }: TerminalViewerProps) {
                         <div className="flex items-center gap-2">
                             <button
                                 onClick={handleKillSession}
-                                className="px-3 py-1.5 text-sm bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-900/50 rounded transition-colors flex items-center gap-2"
+                                disabled={killMutation.isPending}
+                                className="px-3 py-1.5 text-sm bg-red-500/10 hover:bg-red-500/20 disabled:bg-red-500/5 disabled:text-red-800 disabled:border-red-900/20 text-red-400 border border-red-900/50 rounded transition-colors flex items-center gap-2"
                             >
                                 <Square size={14} fill="currentColor" />
-                                Kill Session
+                                {killMutation.isPending ? 'Killing...' : 'Kill Session'}
                             </button>
                             <button onClick={onClose} className="p-2 hover:bg-white/10 rounded transition-colors text-gray-500 hover:text-white">
                                 <X size={20} />
                             </button>
                         </div>
                     </div>
+
+                    {killError && (
+                        <div className="px-4 py-2 border-b border-red-900/30 bg-red-950/30 text-red-300 text-xs">
+                            {killError}
+                        </div>
+                    )}
 
                     <div
                         ref={scrollContainerRef}
@@ -143,4 +161,3 @@ export function TerminalViewer({ session, onClose }: TerminalViewerProps) {
         </Dialog>
     );
 }
-

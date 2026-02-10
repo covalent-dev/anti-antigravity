@@ -69,7 +69,8 @@ function SessionCard({ session, onClick }: { session: Session; onClick: () => vo
 }
 
 export function SessionBoard() {
-    const [selectedSession, setSelectedSession] = useState<Session | null>(null);
+    const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+    const [selectedSessionSnapshot, setSelectedSessionSnapshot] = useState<Session | null>(null);
     const { data: sessions, isLoading } = useQuery({
         queryKey: ['sessions'],
         queryFn: fetchSessions,
@@ -86,18 +87,32 @@ export function SessionBoard() {
         error: sessions?.filter(s => s.status === 'error') || [],
     };
 
+    const selectedSession = selectedSessionId
+        ? sessions?.find(s => s.id === selectedSessionId) ?? selectedSessionSnapshot
+        : null;
+
+    const handleSessionClick = (session: Session) => {
+        setSelectedSessionId(session.id);
+        setSelectedSessionSnapshot(session);
+    };
+
+    const handleCloseViewer = () => {
+        setSelectedSessionId(null);
+        setSelectedSessionSnapshot(null);
+    };
+
     return (
         <>
             <div className="flex gap-4 h-full p-4 overflow-x-auto min-w-full font-sans">
-                <Column title="Idle" count={grouped.idle.length} items={grouped.idle} icon={<Clock size={16} />} onSessionClick={setSelectedSession} />
-                <Column title="Working" count={grouped.working.length} items={grouped.working} icon={<Play size={16} />} onSessionClick={setSelectedSession} />
-                <Column title="Needs Input" count={grouped.needs_input.length} items={grouped.needs_input} icon={<HelpCircle size={16} />} onSessionClick={setSelectedSession} />
-                <Column title="Done" count={grouped.done.length} items={grouped.done} icon={<CheckCircle size={16} />} onSessionClick={setSelectedSession} />
-                <Column title="Error" count={grouped.error.length} items={grouped.error} icon={<AlertCircle size={16} />} onSessionClick={setSelectedSession} />
+                <Column title="Idle" count={grouped.idle.length} items={grouped.idle} icon={<Clock size={16} />} onSessionClick={handleSessionClick} />
+                <Column title="Working" count={grouped.working.length} items={grouped.working} icon={<Play size={16} />} onSessionClick={handleSessionClick} />
+                <Column title="Needs Input" count={grouped.needs_input.length} items={grouped.needs_input} icon={<HelpCircle size={16} />} onSessionClick={handleSessionClick} />
+                <Column title="Done" count={grouped.done.length} items={grouped.done} icon={<CheckCircle size={16} />} onSessionClick={handleSessionClick} />
+                <Column title="Error" count={grouped.error.length} items={grouped.error} icon={<AlertCircle size={16} />} onSessionClick={handleSessionClick} />
             </div>
 
             {selectedSession && (
-                <TerminalViewer session={selectedSession} onClose={() => setSelectedSession(null)} />
+                <TerminalViewer session={selectedSession} onClose={handleCloseViewer} />
             )}
         </>
     );
