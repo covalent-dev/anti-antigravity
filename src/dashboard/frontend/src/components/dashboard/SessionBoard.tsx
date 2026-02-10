@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchSessions, killSession, type Session } from '../../api/client';
 import { Play, Square, AlertCircle, CheckCircle, Clock, HelpCircle } from 'lucide-react';
@@ -71,6 +71,7 @@ function SessionCard({ session, onClick }: { session: Session; onClick: () => vo
 export function SessionBoard() {
     const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
     const [selectedSessionSnapshot, setSelectedSessionSnapshot] = useState<Session | null>(null);
+    const [followActiveSession, setFollowActiveSession] = useState(true);
     const { data: sessions, isLoading } = useQuery({
         queryKey: ['sessions'],
         queryFn: fetchSessions,
@@ -91,6 +92,20 @@ export function SessionBoard() {
         ? sessions?.find(s => s.id === selectedSessionId) ?? selectedSessionSnapshot
         : null;
 
+    useEffect(() => {
+        if (!followActiveSession || !selectedSessionId || !sessions || sessions.length === 0) return;
+
+        const isActiveSession = (status: Session['status']) => ['running', 'working', 'needs_input'].includes(status);
+        const current = sessions.find(s => s.id === selectedSessionId);
+        if (current && isActiveSession(current.status)) return;
+
+        const nextActive = sessions.find(s => s.id !== selectedSessionId && isActiveSession(s.status));
+        if (!nextActive) return;
+
+        setSelectedSessionId(nextActive.id);
+        setSelectedSessionSnapshot(nextActive);
+    }, [followActiveSession, selectedSessionId, sessions]);
+
     const handleSessionClick = (session: Session) => {
         setSelectedSessionId(session.id);
         setSelectedSessionSnapshot(session);
@@ -103,6 +118,17 @@ export function SessionBoard() {
 
     return (
         <>
+            <div className="px-4 pt-3 flex justify-end">
+                <label className="inline-flex items-center gap-2 text-xs text-gray-400 select-none">
+                    <input
+                        type="checkbox"
+                        checked={followActiveSession}
+                        onChange={(e) => setFollowActiveSession(e.target.checked)}
+                        className="accent-blue-500"
+                    />
+                    Follow active while viewing
+                </label>
+            </div>
             <div className="flex gap-4 h-full p-4 overflow-x-auto min-w-full font-sans">
                 <Column title="Idle" count={grouped.idle.length} items={grouped.idle} icon={<Clock size={16} />} onSessionClick={handleSessionClick} />
                 <Column title="Working" count={grouped.working.length} items={grouped.working} icon={<Play size={16} />} onSessionClick={handleSessionClick} />
