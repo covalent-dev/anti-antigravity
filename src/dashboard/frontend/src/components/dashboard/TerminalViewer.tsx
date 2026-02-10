@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Square, X } from 'lucide-react';
 import { clsx } from 'clsx';
+import Ansi from 'ansi-to-react';
 
 import { fetchSessionOutput, killSession, type Session } from '../../api/client';
 
@@ -124,9 +125,9 @@ export function TerminalViewer({ session, onClose }: TerminalViewerProps) {
                                 {error instanceof Error ? ` (${error.message})` : null}
                             </div>
                         ) : (
-                            <pre className="text-sm text-green-300 font-mono leading-relaxed whitespace-pre">
-                                {data?.output || 'Loading...'}
-                            </pre>
+                            <div className="text-sm text-green-300 font-mono leading-relaxed whitespace-pre-wrap break-words">
+                                <Ansi>{data?.output || 'Loading...'}</Ansi>
+                            </div>
                         )}
                     </div>
 
