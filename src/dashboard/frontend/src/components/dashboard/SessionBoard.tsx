@@ -80,13 +80,11 @@ export function SessionBoard() {
         refetchInterval: 2000,
     });
 
-    if (isLoading) return <div className="p-4 text-gray-500">Loading sessions...</div>;
+    const sessionsList = sessions ?? [];
 
     const filteredSessions = useMemo(() => {
-        if (!sessions) return [];
-
         const query = searchQuery.trim().toLowerCase();
-        return sessions.filter(session => {
+        return sessionsList.filter(session => {
             const sessionId = String(session.id ?? '').toLowerCase();
             const sessionMessage = String(session.message ?? '').toLowerCase();
             const sessionAgentType = String(session.agent_type ?? 'unknown');
@@ -96,7 +94,7 @@ export function SessionBoard() {
             const matchesAgent = agentFilter === 'all' || sessionAgentType === agentFilter;
             return matchesQuery && matchesAgent;
         });
-    }, [agentFilter, searchQuery, sessions]);
+    }, [agentFilter, searchQuery, sessionsList]);
 
     const grouped = {
         idle: filteredSessions.filter(s => s.status === 'idle'),
@@ -107,27 +105,27 @@ export function SessionBoard() {
     };
 
     const agentOptions = useMemo(() => {
-        const agents = new Set((sessions || []).map(session => session.agent_type));
+        const agents = new Set(sessionsList.map(session => session.agent_type));
         return ['all', ...Array.from(agents).sort()];
-    }, [sessions]);
+    }, [sessionsList]);
 
     const selectedSession = selectedSessionId
-        ? sessions?.find(s => s.id === selectedSessionId) ?? selectedSessionSnapshot
+        ? sessionsList.find(s => s.id === selectedSessionId) ?? selectedSessionSnapshot
         : null;
 
     useEffect(() => {
-        if (!followActiveSession || !selectedSessionId || !sessions || sessions.length === 0) return;
+        if (!followActiveSession || !selectedSessionId || sessionsList.length === 0) return;
 
         const isActiveSession = (status: Session['status']) => ['running', 'working', 'needs_input'].includes(status);
-        const current = sessions.find(s => s.id === selectedSessionId);
+        const current = sessionsList.find(s => s.id === selectedSessionId);
         if (current && isActiveSession(current.status)) return;
 
-        const nextActive = sessions.find(s => s.id !== selectedSessionId && isActiveSession(s.status));
+        const nextActive = sessionsList.find(s => s.id !== selectedSessionId && isActiveSession(s.status));
         if (!nextActive) return;
 
         setSelectedSessionId(nextActive.id);
         setSelectedSessionSnapshot(nextActive);
-    }, [followActiveSession, selectedSessionId, sessions]);
+    }, [followActiveSession, selectedSessionId, sessionsList]);
 
     const handleSessionClick = (session: Session) => {
         setSelectedSessionId(session.id);
@@ -164,7 +162,7 @@ export function SessionBoard() {
                         ))}
                     </select>
                     <span className="text-xs text-gray-500">
-                        Showing {filteredSessions.length} / {sessions?.length || 0}
+                        Showing {filteredSessions.length} / {sessionsList.length}
                     </span>
                 </div>
 
@@ -178,6 +176,9 @@ export function SessionBoard() {
                     Follow active while viewing
                 </label>
             </div>
+            {isLoading && (
+                <div className="px-4 pb-1 text-xs text-gray-500">Loading sessions...</div>
+            )}
             <div className="flex gap-4 h-full p-4 overflow-x-auto min-w-full font-sans">
                 <Column title="Idle" count={grouped.idle.length} items={grouped.idle} icon={<Clock size={16} />} onSessionClick={handleSessionClick} />
                 <Column title="Working" count={grouped.working.length} items={grouped.working} icon={<Play size={16} />} onSessionClick={handleSessionClick} />
